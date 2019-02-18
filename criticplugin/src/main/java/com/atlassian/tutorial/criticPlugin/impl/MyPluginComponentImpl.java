@@ -1,9 +1,9 @@
-package com.atlassian.criticplugin.criticplugin.impl;
+package com.atlassian.tutorial.criticPlugin.impl;
 
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.sal.api.ApplicationProperties;
-import com.atlassian.criticplugin.criticplugin.api.MyPluginComponent;
+import com.atlassian.tutorial.criticPlugin.api.MyPluginComponent;
 
 import javax.inject.Inject;
 import javax.inject.Named;

@@ -1,4 +1,4 @@
-package com.atlassian.criticplugin.criticplugin.api;
+package com.atlassian.tutorial.criticPlugin.api;
 
 public interface MyPluginComponent
 {
