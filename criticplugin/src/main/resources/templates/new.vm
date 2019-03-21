@@ -4,13 +4,14 @@
     <meta name="decorator" content="atl.general">
 </head>
 <body class="page-type-admin">
-<div class="content-container">
+<div class="content-container" id="issue-crud-container">
 
     <div class="content-body">
         <h1>Create issue</h1>
         <div class="create-issue-panel">
 
             <form method="post" id="h" action="issuecrud" class="aui">
+                <input type="hidden" name="actionType" value="new">
                 <div class="field-group">
                     <label for="h-fsummary">
                         Summary
@@ -22,10 +23,30 @@
                 <div class="field-group">
                     <label for="h-fdescription">
                         Description
-                        <span class="aui-icon icon-required"></span>
-                        <span class="content">required</span>
                     </label>
-                    <textarea id="h-fdescription" name="description"></textarea>
+                    <textarea style="height: 200px; width: 300px" id="h-fdescription" name="description"></textarea>
+                </div>
+                <div class="field-group">
+                    <label for="h-fpriority">
+                        Priority
+                    </label>
+                    <select id="h-fpriority" name="priority">
+                        <option value="1">Highest</option>
+                        <option value="2">High</option>
+                        <option value="3" selected>Medium</option>
+                        <option value="4">Low</option>
+                        <option value="5">Lowest</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="h-ftype">
+                        Type
+                    </label>
+                    <select id="h-ftype" name="type">
+                        #foreach( $issueType in $issueTypes )
+                        <option value="$issueType.getId()">$issueType.getName()</option>
+                        #end
+                    </select>
                 </div>
                 <div class="buttons">
                     <input class="button" type="submit" value="Create">

@@ -1,13 +1,5 @@
-You have successfully created an Atlassian Plugin!
+A sample JIRA plugin that demonstrates how to create, read, update, and delete issues using JIRA 5.0 and later API.
 
-Here are the SDK commands you'll use immediately:
+You can find documentation that describes this sample along with steps for creating it at:
 
-* atlas-run   -- installs this plugin into the product and starts it on localhost
-* atlas-debug -- same as atlas-run, but allows a debugger to attach at port 5005
-* atlas-cli   -- after atlas-run or atlas-debug, opens a Maven command line window:
-                 - 'pi' reinstalls the plugin into the running product instance
-* atlas-help  -- prints description for all commands in the SDK
-
-Full documentation is always available at:
-
-https://developer.atlassian.com/display/DOCS/Introduction+to+the+Atlassian+Plugin+SDK
+https://developer.atlassian.com/server/jira/platform/creating-a-jira-issue-crud-servlet-and-issue-search/

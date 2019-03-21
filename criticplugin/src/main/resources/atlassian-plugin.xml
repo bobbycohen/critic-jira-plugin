@@ -9,29 +9,16 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
   </plugin-info>
   <!-- add our i18n resource -->
-  <resource type="i18n" name="i18n" location="criticPlugin"/>
+  <resource type="i18n" name="i18n" location="criticplugin"/>
   <!-- add our web resources -->
-  <web-resource key="criticPlugin-resources" name="criticPlugin Web Resources">
+  <web-resource key="criticplugin-resources" name="criticplugin Web Resources">
     <dependency>com.atlassian.auiplugin:ajs</dependency>
-    <resource type="download" name="criticPlugin.css" location="/css/criticPlugin.css"/>
-    <resource type="download" name="criticPlugin.js" location="/js/criticPlugin.js"/>
+    <resource type="download" name="tutorial-jira-simple-issue-crud.css" location="/css/tutorial-jira-simple-issue-crud.css"/>
+    <resource type="download" name="tutorial-jira-simple-issue-crud.js" location="/js/tutorial-jira-simple-issue-crud.js"/>
     <resource type="download" name="images/" location="/images"/>
-    <context>criticPlugin</context>
+    <context>criticplugin</context>
   </web-resource>
-  <web-section name="My Links Main Section" i18n-name-key="my-links-main-section.name" key="my_links_section" location="my_links_link" weight="10"/>
-  <web-item key="my_links_link" name="Link on My Links Main Section" section="system.top.navigation.bar" weight="47">
-    <label>My Company</label>
-    <link linkId="my_links_link">http://www.atlassian.com</link>
-  </web-item>
-  <web-item key="website_link" name="Company Web Site" section="my_links_link/my_links_section" weight="10">
-    <label>Web Site</label>
-    <link linkId="website_link">http://www.atlassian.com</link>
-  </web-item>
-  <web-item key="documentation_link" name="Documentation Web Site" section="my_links_link/my_links_section" weight="10">
-    <label>Documentation</label>
-    <link linkId="documentation_link">http://confluence.atlassian.com</link>
-  </web-item>
-  <servlet name="Issue CRUD" i18n-name-key="issue-crud.name" key="issue-crud" class="com.atlassian.tutorial.servlet.IssueCRUD">
+  <servlet name="Issue CRUD" i18n-name-key="issue-crud.name" key="issue-crud" class="com.example.plugins.tutorial.servlet.IssueCRUD">
     <description key="issue-crud.description">The Issue CRUD Plugin</description>
     <url-pattern>/issuecrud</url-pattern>
   </servlet>
