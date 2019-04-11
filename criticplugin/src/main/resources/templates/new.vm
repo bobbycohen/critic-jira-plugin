@@ -48,6 +48,12 @@
                         #end
                     </select>
                 </div>
+                <div class="field-group">
+                    <label for="h-fget">
+                        Let's make a GET call!
+                    </label>
+                    <textarea style="height: 200px; width: 300px" id="h-fget" name="get"></textarea>
+                </div>
                 <div class="buttons">
                     <input class="button" type="submit" value="Create">
                     <a href="issuecrud">Cancel</a>

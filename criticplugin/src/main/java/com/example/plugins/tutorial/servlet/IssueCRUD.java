@@ -22,17 +22,25 @@ import com.atlassian.query.Query;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.gson.Gson;
 
+import java.net.URL;
+import java.net.HttpURLConnection;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+//import java.util.logging.Logger;
+//import java.util.logging.Level;
 
 @Scanned
 public class IssueCRUD extends HttpServlet {
@@ -185,10 +193,60 @@ public class IssueCRUD extends HttpServlet {
         }
     }
 
+    public String getJSON(String url, int timeout) {
+        HttpURLConnection c = null;
+        int status = 0;
+        try {
+            URL u = new URL(url);
+            c = (HttpURLConnection) u.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("Content-length", "0");
+            c.setUseCaches(false);
+            c.setAllowUserInteraction(false);
+            c.setConnectTimeout(timeout);
+            c.setReadTimeout(timeout);
+            c.connect();
+            status = c.getResponseCode();
+
+            switch (status) {
+                case 200:
+                case 201:
+                    BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line+"\n");
+                    }
+                    br.close();
+                    return sb.toString();
+            }
+        } catch (MalformedURLException ex) {
+            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (c != null) {
+                try {
+                    c.disconnect();
+                } catch (Exception ex) {
+                    //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return null;
+    }
+
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
 
         Map<String, Object> context = new HashMap<>();
+
+        //URL url = new URL("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5");
+        //HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        //con.setRequestMethod("GET");
+        //int status = con.getResponseCode();
+        String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 1000000);
+        CriticIssue issue = new Gson().fromJson(data, CriticIssue.class);
 
         Project project = projectService.getProjectByKey(user, "DEMO").getProject();
 
@@ -209,7 +267,7 @@ public class IssueCRUD extends HttpServlet {
 
         IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
         issueInputParameters.setSummary(req.getParameter("summary"))
-                .setDescription(req.getParameter("description"))
+                .setDescription(req.getParameter("description") + "\nlinkhere\n" + data)
                 .setAssigneeId(user.getName())
                 .setReporterId(user.getName())
                 .setProjectId(project.getId())
