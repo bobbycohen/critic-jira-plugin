@@ -22,7 +22,9 @@ import com.atlassian.query.Query;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.gson.Gson;
+//import com.google.gson.Gson;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.net.URL;
 import java.net.HttpURLConnection;
@@ -246,7 +248,12 @@ public class IssueCRUD extends HttpServlet {
         //con.setRequestMethod("GET");
         //int status = con.getResponseCode();
         String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 1000000);
-        CriticIssue issue = new Gson().fromJson(data, CriticIssue.class);
+        //CriticIssue issue = new Gson().fromJson(data, CriticIssue.class);
+        JSONObject dataObj = new JSONObject(data);
+        int count = dataObj.getInt("count");
+
+        //JSONArray array = obj1.getJSONArray("bug_reports");
+        //JSONObject obj2 = array.getJSONObject(0);
 
         Project project = projectService.getProjectByKey(user, "DEMO").getProject();
 
@@ -265,27 +272,77 @@ public class IssueCRUD extends HttpServlet {
             return;
         }
 
-        IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
-        issueInputParameters.setSummary(req.getParameter("summary"))
-                .setDescription(req.getParameter("description") + "\nlinkhere\n" + data)
+        IssueInputParameters issueInputParameters = null;
+        JSONArray bugReports = dataObj.getJSONArray("bug_reports");
+        JSONObject reportObj = null;
+        String description = null;
+        JSONObject metadata = null;
+        JSONArray metadataNames = null;
+        String fieldName = null;
+        for (int i = 0; i < count; i++) {
+            reportObj = bugReports.getJSONObject(i);
+            issueInputParameters = issueService.newIssueInputParameters();
+            description = "ID: " + reportObj.getInt("id")
+                          + "\nDescription: " + reportObj.getString("description")
+                          + "\nCreated at: " + reportObj.getString("created_at")
+                          + "\nUpdated at: " + reportObj.getString("updated_at");
+            if (!reportObj.isNull("steps_to_reproduce")) {
+                description = description + "\nSteps to Reproduce: " + reportObj.get("steps_to_reproduce");
+            }
+            if (!reportObj.isNull("user_identifier")) {
+                description = description + "\nUser Identifier: " + reportObj.get("user_identifier");
+            }
+            if (!reportObj.isNull("metadata")) {
+                metadata = reportObj.getJSONObject("metadata");
+                metadataNames = metadata.names();
+                for (int j = 0; j < metadata.length(); j++) {
+                    fieldName = metadataNames.getString(j);
+                    description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
+                                  + ": " + metadata.get(fieldName);
+                }
+            }
+
+            issueInputParameters.setSummary(reportObj.getString("description"))
+                .setDescription(description)
                 .setAssigneeId(user.getName())
                 .setReporterId(user.getName())
                 .setProjectId(project.getId())
                 .setIssueTypeId(req.getParameter("type"))
                 .setPriorityId(req.getParameter("priority"));
-
-        IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
-
-        if (result.getErrorCollection().hasAnyErrors()) {
-            List<Issue> issues = getIssues();
-            context.put("issues", issues);
-            context.put("errors", result.getErrorCollection().getErrors());
-            resp.setContentType("text/html;charset=utf-8");
-            templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
-        } else {
-            issueService.create(user, result);
-            resp.sendRedirect("issuecrud");
+            IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
+            if (result.getErrorCollection().hasAnyErrors()) {
+                List<Issue> issues = getIssues();
+                context.put("issues", issues);
+                context.put("errors", result.getErrorCollection().getErrors());
+                resp.setContentType("text/html;charset=utf-8");
+                templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
+            } else {
+                issueService.create(user, result);
+            }
         }
+        resp.sendRedirect("issuecrud");
+
+        //IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
+        //issueInputParameters.setSummary(req.getParameter("summary"))
+        //        .setDescription(req.getParameter("description") + "\nlinkhere\n" + data + "number" + count + "array" + obj2)
+        //        .setAssigneeId(user.getName())
+        //        .setReporterId(user.getName())
+        //        .setProjectId(project.getId())
+        //        .setIssueTypeId(req.getParameter("type"))
+        //        .setPriorityId(req.getParameter("priority"));
+
+        //IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
+
+        //if (result.getErrorCollection().hasAnyErrors()) {
+        //    List<Issue> issues = getIssues();
+        //    context.put("issues", issues);
+        //    context.put("errors", result.getErrorCollection().getErrors());
+        //    resp.setContentType("text/html;charset=utf-8");
+        //    templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
+        //} else {
+        //    issueService.create(user, result);
+        //    resp.sendRedirect("issuecrud");
+        //}
     }
 
 
