@@ -249,16 +249,6 @@ public class IssueCRUD extends HttpServlet {
         return list;
     }
 
-    public void downloadToFile(File f, String url) {
-        try {
-            URL downloadUrl = new URL(url);
-            FileUtils.copyURLToFile(downloadUrl, f);
-        } catch (MalformedURLException ex) {
-        } catch (IOException ex) {
-        }
-        return;
-    }
-
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
         Map<String, Object> context = new HashMap<>();
@@ -287,9 +277,9 @@ public class IssueCRUD extends HttpServlet {
             JSONObject bugDetails = new JSONObject(details);
             issueInputParameters = issueService.newIssueInputParameters();
             String description = "ID: " + reportObj.getInt("id")
-                          + "\nDescription: " + reportObj.getString("description")
-                          + "\nCreated at: " + reportObj.getString("created_at")
-                          + "\nUpdated at: " + reportObj.getString("updated_at");
+                + "\nDescription: " + reportObj.getString("description")
+                + "\nCreated at: " + reportObj.getString("created_at")
+                + "\nUpdated at: " + reportObj.getString("updated_at");
             if (!reportObj.isNull("steps_to_reproduce")) {
                 description = description + "\nSteps to Reproduce: " + reportObj.get("steps_to_reproduce");
             }
@@ -302,10 +292,9 @@ public class IssueCRUD extends HttpServlet {
                 for (int j = 0; j < metadata.length(); j++) {
                     String fieldName = metadataNames.getString(j);
                     description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
-                                  + ": " + metadata.get(fieldName);
+                        + ": " + metadata.get(fieldName);
                 }
             }
-            description = description + "\n\n" + details + "\n\n" + data;
             issueInputParameters.setSummary(reportObj.getString("description"))
                 .setDescription(description)
                 .setAssigneeId(user.getName())
@@ -328,10 +317,11 @@ public class IssueCRUD extends HttpServlet {
                     File attachmentLoc = new File(attachmentInfo.getString("file_file_name"));
                     URL attachmentUrl = new URL("https:" + attachmentInfo.getString("file_url"));
                     FileUtils.copyURLToFile(attachmentUrl, attachmentLoc);
-                    CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc, attachmentInfo.getString("file_file_name"),
-                                                          attachmentInfo.getString("file_content_type"),
-                                                          user, (Issue) issue.getIssue(), false, false, null,
-                                                          myDate, true);
+                    CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc,
+                        attachmentInfo.getString("file_file_name"),
+                        attachmentInfo.getString("file_content_type"),
+                        user, issue.getIssue(), false, false, null,
+                        myDate, true);
                     try {
                         attachmentManager.createAttachment(bean);
                     } catch (AttachmentException ex) {
