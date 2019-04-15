@@ -10,12 +10,15 @@ import com.atlassian.jira.issue.MutableIssue;
 import com.atlassian.jira.issue.issuetype.IssueType;
 import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.issue.search.SearchResults;
+import com.atlassian.jira.issue.attachment.CreateAttachmentParamsBean;
+import com.atlassian.jira.issue.AttachmentManager;
 import com.atlassian.jira.jql.builder.JqlClauseBuilder;
 import com.atlassian.jira.jql.builder.JqlQueryBuilder;
 import com.atlassian.jira.project.Project;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.web.bean.PagerFilter;
+import com.atlassian.jira.web.util.AttachmentException;
 import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.plugin.spring.scanner.annotation.imports.JiraImport;
 import com.atlassian.query.Query;
@@ -25,6 +28,8 @@ import org.slf4j.LoggerFactory;
 //import com.google.gson.Gson;
 import org.json.JSONObject;
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.apache.commons.io.FileUtils;
 
 import java.net.URL;
 import java.net.HttpURLConnection;
@@ -34,13 +39,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.File;
+import java.util.Iterator;
 import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Date;
 //import java.util.logging.Logger;
 //import java.util.logging.Level;
 
@@ -60,6 +69,8 @@ public class IssueCRUD extends HttpServlet {
     private JiraAuthenticationContext authenticationContext;
     @JiraImport
     private ConstantsManager constantsManager;
+    @JiraImport
+    private AttachmentManager attachmentManager;
 
     private static final String LIST_ISSUES_TEMPLATE = "/templates/list.vm";
     private static final String NEW_ISSUE_TEMPLATE = "/templates/new.vm";
@@ -69,13 +80,15 @@ public class IssueCRUD extends HttpServlet {
                      SearchService searchService,
                      TemplateRenderer templateRenderer,
                      JiraAuthenticationContext authenticationContext,
-                     ConstantsManager constantsManager) {
+                     ConstantsManager constantsManager,
+                     AttachmentManager attachmentManager) {
         this.issueService = issueService;
         this.projectService = projectService;
         this.searchService = searchService;
         this.templateRenderer = templateRenderer;
         this.authenticationContext = authenticationContext;
         this.constantsManager = constantsManager;
+        this.attachmentManager = attachmentManager;
     }
 
     @Override
@@ -238,6 +251,36 @@ public class IssueCRUD extends HttpServlet {
         return null;
     }
 
+    public static Map<String, Object> toMap(JSONObject jsonobj) throws JSONException {
+        Map<String, Object> map = new HashMap<String, Object>();
+        Iterator<String> keys = jsonobj.keys();
+        while(keys.hasNext()) {
+            String key = keys.next();
+            Object value = jsonobj.get(key);
+            if (value instanceof JSONArray) {
+                value = toList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = toMap((JSONObject) value);
+            }
+            map.put(key, value);
+        }
+        return map;
+    }
+
+    public static List<Object> toList(JSONArray array) throws JSONException {
+        List<Object> list = new ArrayList<Object>();
+        for(int i = 0; i < array.length(); i++) {
+            Object value = array.get(i);
+            if (value instanceof JSONArray) {
+                value = toList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = toMap((JSONObject) value);
+            }
+            list.add(value);
+        }
+        return list;
+    }
+
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
 
@@ -247,10 +290,15 @@ public class IssueCRUD extends HttpServlet {
         //HttpURLConnection con = (HttpURLConnection) url.openConnection();
         //con.setRequestMethod("GET");
         //int status = con.getResponseCode();
-        String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 1000000);
+        String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
         //CriticIssue issue = new Gson().fromJson(data, CriticIssue.class);
         JSONObject dataObj = new JSONObject(data);
         int count = dataObj.getInt("count");
+
+        //String imageUrl = "https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png";
+        URL imageUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
+        File f = new File("image.png");
+        FileUtils.copyURLToFile(imageUrl, f);
 
         //JSONArray array = obj1.getJSONArray("bug_reports");
         //JSONObject obj2 = array.getJSONObject(0);
@@ -279,8 +327,13 @@ public class IssueCRUD extends HttpServlet {
         JSONObject metadata = null;
         JSONArray metadataNames = null;
         String fieldName = null;
-        for (int i = 0; i < count; i++) {
+        String moreData = null;
+        String moreData2 = null;
+        //for (int i = 0; i < count; i++) {
+        for (int i = 0; i < 2; i++) {
             reportObj = bugReports.getJSONObject(i);
+            moreData = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
+            moreData2 = getJSON("https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/414/original/logcat5459445908258442240.txt?1554921565", 4000);
             issueInputParameters = issueService.newIssueInputParameters();
             description = "ID: " + reportObj.getInt("id")
                           + "\nDescription: " + reportObj.getString("description")
@@ -301,6 +354,17 @@ public class IssueCRUD extends HttpServlet {
                                   + ": " + metadata.get(fieldName);
                 }
             }
+            description = description + "\n\n" + moreData + "\n\n" + moreData2;
+            List<Issue> myIssues = getIssues();
+            Issue issue = myIssues.get(0);
+            Date myDate = new Date();
+            CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
+            description = issue.getSummary();
+            try {
+                attachmentManager.createAttachment(bean);
+            } catch (AttachmentException ex) {
+                description = ex.getMessage();
+            }
 
             issueInputParameters.setSummary(reportObj.getString("description"))
                 .setDescription(description)
@@ -317,7 +381,16 @@ public class IssueCRUD extends HttpServlet {
                 resp.setContentType("text/html;charset=utf-8");
                 templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
             } else {
+                //List<Issue> issues = getIssues();
+                //Issue issue = issues.get(0);
+                //IssueService.IssueResult issue = issueService.create(user, result);
                 issueService.create(user, result);
+                //JSONObject moreDataObj = new JSONObject(moreData);
+                //JSONArray attachments = moreDataObj.getJSONArray("attachments");
+                //Map<String, Object> imgProps = toMap(attachments.getJSONObject(0));
+                //Date myDate = new Date();
+                //CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
+                //attachmentManager.createAttachment(bean);
             }
         }
         resp.sendRedirect("issuecrud");
