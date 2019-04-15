@@ -25,7 +25,6 @@ import com.atlassian.query.Query;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import com.google.gson.Gson;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -50,8 +49,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Date;
-//import java.util.logging.Logger;
-//import java.util.logging.Level;
 
 @Scanned
 public class IssueCRUD extends HttpServlet {
@@ -94,36 +91,25 @@ public class IssueCRUD extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String action = Optional.ofNullable(req.getParameter("actionType")).orElse("");
-        //List<String> issueTypes = constantsManager.getAllIssueTypeIds();
         Collection<IssueType> issueTypes = constantsManager.getRegularIssueTypeObjects();
-        //Collection<IssueType> issueTypes = constantsManager.getAllIssueTypeObjects();
         Map<String, Object> context = new HashMap<>();
         resp.setContentType("text/html;charset=utf-8");
         switch (action) {
             case "new":
-                //ConstantsManager.Collection<IssueType> issueTypes = constantsManager.getAllIssueTypeObjects();
-                //List<String> allIssueTypes = constantsManager.getAllIssueTypeIds();
                 context.put("issueTypes", issueTypes);
-                //context.put("issueTypes2", issueTypes2);
                 templateRenderer.render(NEW_ISSUE_TEMPLATE, context, resp.getWriter());
                 break;
             case "edit":
                 IssueService.IssueResult issueResult = issueService.getIssue(authenticationContext.getLoggedInUser(),
                         req.getParameter("key"));
                 context.put("issue", issueResult.getIssue());
-                //ConstantsManager.Collection<IssueType> issueTypes = constantsManager.getAllIssueTypeObjects();
-                //List<String> allIssueTypes = constantsManager.getAllIssueTypeIds();
                 context.put("issueTypes", issueTypes);
-                //context.put("issueTypes2", issueTypes2);
                 templateRenderer.render(EDIT_ISSUE_TEMPLATE, context, resp.getWriter());
                 break;
             default:
                 List<Issue> issues = getIssues();
                 context.put("issues", issues);
-                //ConstantsManager.Collection<IssueType> issueTypes = constantsManager.getAllIssueTypeObjects();
-                //List<String> allIssueTypes = constantsManager.getAllIssueTypeIds();
                 context.put("issueTypes", issueTypes);
-                //context.put("issueTypes2", issueTypes2);
                 templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
         }
 
@@ -150,21 +136,6 @@ public class IssueCRUD extends HttpServlet {
         }
         return searchResults != null ? searchResults.getIssues() : null;
     }
-
-    /**
-     * Retrieve issue types using JQL query project="DEMO"
-     *
-     * @return Collection of IssueTypes
-     */
-    //private Collection<IssueType> getIssueTypes() {
-//
-//        ApplicationUser user = authenticationContext.getLoggedInUser();
-//        JqlClauseBuilder jqlClauseBuilder = JqlQueryBuilder.newClauseBuilder();
-//        Query query = jqlClauseBuilder.project("DEMO").buildQuery();
-//        PagerFilter pagerFilter = PagerFilter.getUnlimitedFilter();
-//
-//        return
-//    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -236,15 +207,12 @@ public class IssueCRUD extends HttpServlet {
                     return sb.toString();
             }
         } catch (MalformedURLException ex) {
-            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         } finally {
             if (c != null) {
                 try {
                     c.disconnect();
                 } catch (Exception ex) {
-                    //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
@@ -282,88 +250,43 @@ public class IssueCRUD extends HttpServlet {
     }
 
     public void downloadToFile(File f, String url) {
-        //URL downloadUrl = null;
         try {
             URL downloadUrl = new URL(url);
             FileUtils.copyURLToFile(downloadUrl, f);
         } catch (MalformedURLException ex) {
-            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         }
-        //downloadUrl = null;
         return;
     }
 
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
-
         Map<String, Object> context = new HashMap<>();
-
-        //URL url = new URL("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5");
-        //HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        //con.setRequestMethod("GET");
-        //int status = con.getResponseCode();
         String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
-        //CriticIssue issue = new Gson().fromJson(data, CriticIssue.class);
         JSONObject dataObj = new JSONObject(data);
         int count = dataObj.getInt("count");
-
-        //String imageUrl = "https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png";
-        //URL imageUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
-        //File f = new File("image.png");
-        //File[] f = null;
-        //URL downloadUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
-        //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
-        //FileUtils.copyURLToFile(imageUrl, f);
-        //imageUrl = null;
-        //JSONArray array = obj1.getJSONArray("bug_reports");
-        //JSONObject obj2 = array.getJSONObject(0);
-
         Project project = projectService.getProjectByKey(user, "DEMO").getProject();
-
         if (project == null) {
             context.put("errors", Collections.singletonList("Project doesn't exist"));
             templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
             return;
         }
-
         IssueType taskIssueType = constantsManager.getAllIssueTypeObjects().stream().filter(
                 issueType -> issueType.getName().equalsIgnoreCase("task")).findFirst().orElse(null);
-
         if(taskIssueType == null) {
             context.put("errors", Collections.singletonList("Can't find Task issue type"));
             templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
             return;
         }
-
         IssueInputParameters issueInputParameters = null;
         JSONArray bugReports = dataObj.getJSONArray("bug_reports");
-        JSONObject reportObj = null;
-        String description = null;
-        JSONObject metadata = null;
-        JSONArray metadataNames = null;
-        String fieldName = null;
-        String details = null;
-        //String moreData2 = null;
-        JSONObject bugDetails = null;
-        JSONArray attachments = null;
-        JSONObject attachment = null;
-        //URL attachmentUrl = null;
-        File f = null;
-        CreateAttachmentParamsBean bean = null;
         Date myDate = new Date();
-        //URL attachmentUrl = new URL("poo");
-        //for (int i = 0; i < count; i++) {
         for (int i = 0; i < 2; i++) {
-            //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
-            //attachmentUrl = null;
-            reportObj = bugReports.getJSONObject(i);
-            details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
-            bugDetails = new JSONObject(details);
-            //moreData2 = getJSON("https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/414/original/logcat5459445908258442240.txt?1554921565", 4000);
+            JSONObject reportObj = bugReports.getJSONObject(i);
+            String details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
+            JSONObject bugDetails = new JSONObject(details);
             issueInputParameters = issueService.newIssueInputParameters();
-            description = "ID: " + reportObj.getInt("id")
+            String description = "ID: " + reportObj.getInt("id")
                           + "\nDescription: " + reportObj.getString("description")
                           + "\nCreated at: " + reportObj.getString("created_at")
                           + "\nUpdated at: " + reportObj.getString("updated_at");
@@ -374,32 +297,15 @@ public class IssueCRUD extends HttpServlet {
                 description = description + "\nUser Identifier: " + reportObj.get("user_identifier");
             }
             if (!reportObj.isNull("metadata")) {
-                metadata = reportObj.getJSONObject("metadata");
-                metadataNames = metadata.names();
+                JSONObject metadata = reportObj.getJSONObject("metadata");
+                JSONArray metadataNames = metadata.names();
                 for (int j = 0; j < metadata.length(); j++) {
-                    fieldName = metadataNames.getString(j);
+                    String fieldName = metadataNames.getString(j);
                     description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
                                   + ": " + metadata.get(fieldName);
                 }
             }
-            //f = new File[bugDetails.getJSONArray("attachments").length()];
-            //for (int k = 0; k < bugDetails.getJSONArray("attachments").length(); k++) {
-            //    f[k] = new File(bugDetails.getJSONArray("attachments").getJSONObject(k).getString("file_file_name"));
-            //    downloadToFile(f[k], "https:" + bugDetails.getJSONArray("attachments").getJSONObject(k).getString("file_url"));
-            //}
-            //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
-            description = description + "\n\n" + details;
-            //List<Issue> myIssues = getIssues();
-            //Issue issue = myIssues.get(0);
-
-            //CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
-            //description = issue.getSummary();
-            //try {
-            //    attachmentManager.createAttachment(bean);
-            //} catch (AttachmentException ex) {
-            //    description = ex.getMessage();
-            //}
-
+            description = description + "\n\n" + details + "\n\n" + data;
             issueInputParameters.setSummary(reportObj.getString("description"))
                 .setDescription(description)
                 .setAssigneeId(user.getName())
@@ -415,23 +321,15 @@ public class IssueCRUD extends HttpServlet {
                 resp.setContentType("text/html;charset=utf-8");
                 templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
             } else {
-                //List<Issue> issues = getIssues();
-                //Issue issue = issues.get(0);
                 IssueService.IssueResult issue = issueService.create(user, result);
-                attachments = bugDetails.getJSONArray("attachments");
-
+                JSONArray attachments = bugDetails.getJSONArray("attachments");
                 for (int j = 0; j < attachments.length(); j++) {
-                    attachment = attachments.getJSONObject(j);
-                    //attachmentUrl2 = new URL("poo");
-                    //f = null;
-                    //f = new File(attachment.getString("file_file_name"));
-                    //downloadToFile(f, "https:" + attachment.getString("file_file_url"));
-                    f = new File(attachment.getString("file_file_name"));
-                    URL newUrl = new URL("https:" + attachment.getString("file_url"));
-                    FileUtils.copyURLToFile(newUrl, f);
-                    //FileUtils.copyURLToFile(attachmentUrl, f);
-                    bean = new CreateAttachmentParamsBean(f, attachment.getString("file_file_name"),
-                                                          attachment.getString("file_content_type"),
+                    JSONObject attachmentInfo = attachments.getJSONObject(j);
+                    File attachmentLoc = new File(attachmentInfo.getString("file_file_name"));
+                    URL attachmentUrl = new URL("https:" + attachmentInfo.getString("file_url"));
+                    FileUtils.copyURLToFile(attachmentUrl, attachmentLoc);
+                    CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc, attachmentInfo.getString("file_file_name"),
+                                                          attachmentInfo.getString("file_content_type"),
                                                           user, (Issue) issue.getIssue(), false, false, null,
                                                           myDate, true);
                     try {
@@ -440,40 +338,10 @@ public class IssueCRUD extends HttpServlet {
                         description = ex.getMessage();
                     }
                 }
-                //issueService.create(user, result);
-                //JSONObject moreDataObj = new JSONObject(moreData);
-                //JSONArray attachments = moreDataObj.getJSONArray("attachments");
-                //Map<String, Object> imgProps = toMap(attachments.getJSONObject(0));
-                //Date myDate = new Date();
-                //CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
-                //attachmentManager.createAttachment(bean);
             }
         }
         resp.sendRedirect("issuecrud");
-
-        //IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
-        //issueInputParameters.setSummary(req.getParameter("summary"))
-        //        .setDescription(req.getParameter("description") + "\nlinkhere\n" + data + "number" + count + "array" + obj2)
-        //        .setAssigneeId(user.getName())
-        //        .setReporterId(user.getName())
-        //        .setProjectId(project.getId())
-        //        .setIssueTypeId(req.getParameter("type"))
-        //        .setPriorityId(req.getParameter("priority"));
-
-        //IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
-
-        //if (result.getErrorCollection().hasAnyErrors()) {
-        //    List<Issue> issues = getIssues();
-        //    context.put("issues", issues);
-        //    context.put("errors", result.getErrorCollection().getErrors());
-        //    resp.setContentType("text/html;charset=utf-8");
-        //    templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
-        //} else {
-        //    issueService.create(user, result);
-        //    resp.sendRedirect("issuecrud");
-        //}
     }
-
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
