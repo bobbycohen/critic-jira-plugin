@@ -281,6 +281,20 @@ public class IssueCRUD extends HttpServlet {
         return list;
     }
 
+    public void downloadToFile(File f, String url) {
+        //URL downloadUrl = null;
+        try {
+            URL downloadUrl = new URL(url);
+            FileUtils.copyURLToFile(downloadUrl, f);
+        } catch (MalformedURLException ex) {
+            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            //java.util.logging.Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+        }
+        //downloadUrl = null;
+        return;
+    }
+
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
 
@@ -296,10 +310,13 @@ public class IssueCRUD extends HttpServlet {
         int count = dataObj.getInt("count");
 
         //String imageUrl = "https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png";
-        URL imageUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
-        File f = new File("image.png");
-        FileUtils.copyURLToFile(imageUrl, f);
-
+        //URL imageUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
+        //File f = new File("image.png");
+        //File[] f = null;
+        //URL downloadUrl = new URL("https://dezov.s3.amazonaws.com/media/stick-figure-png5a0-4d0c-b092-85ebd63534c3.png");
+        //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
+        //FileUtils.copyURLToFile(imageUrl, f);
+        //imageUrl = null;
         //JSONArray array = obj1.getJSONArray("bug_reports");
         //JSONObject obj2 = array.getJSONObject(0);
 
@@ -327,13 +344,24 @@ public class IssueCRUD extends HttpServlet {
         JSONObject metadata = null;
         JSONArray metadataNames = null;
         String fieldName = null;
-        String moreData = null;
-        String moreData2 = null;
+        String details = null;
+        //String moreData2 = null;
+        JSONObject bugDetails = null;
+        JSONArray attachments = null;
+        JSONObject attachment = null;
+        //URL attachmentUrl = null;
+        File f = null;
+        CreateAttachmentParamsBean bean = null;
+        Date myDate = new Date();
+        //URL attachmentUrl = new URL("poo");
         //for (int i = 0; i < count; i++) {
         for (int i = 0; i < 2; i++) {
+            //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
+            //attachmentUrl = null;
             reportObj = bugReports.getJSONObject(i);
-            moreData = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
-            moreData2 = getJSON("https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/414/original/logcat5459445908258442240.txt?1554921565", 4000);
+            details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
+            bugDetails = new JSONObject(details);
+            //moreData2 = getJSON("https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/414/original/logcat5459445908258442240.txt?1554921565", 4000);
             issueInputParameters = issueService.newIssueInputParameters();
             description = "ID: " + reportObj.getInt("id")
                           + "\nDescription: " + reportObj.getString("description")
@@ -354,17 +382,23 @@ public class IssueCRUD extends HttpServlet {
                                   + ": " + metadata.get(fieldName);
                 }
             }
-            description = description + "\n\n" + moreData + "\n\n" + moreData2;
-            List<Issue> myIssues = getIssues();
-            Issue issue = myIssues.get(0);
-            Date myDate = new Date();
-            CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
-            description = issue.getSummary();
-            try {
-                attachmentManager.createAttachment(bean);
-            } catch (AttachmentException ex) {
-                description = ex.getMessage();
-            }
+            //f = new File[bugDetails.getJSONArray("attachments").length()];
+            //for (int k = 0; k < bugDetails.getJSONArray("attachments").length(); k++) {
+            //    f[k] = new File(bugDetails.getJSONArray("attachments").getJSONObject(k).getString("file_file_name"));
+            //    downloadToFile(f[k], "https:" + bugDetails.getJSONArray("attachments").getJSONObject(k).getString("file_url"));
+            //}
+            //downloadToFile(f, "https://s3.amazonaws.com/inventiv-critic-web-production/attachments/files/000/000/449/original/logcat6734813367933620968.txt?1555263267");
+            description = description + "\n\n" + details;
+            //List<Issue> myIssues = getIssues();
+            //Issue issue = myIssues.get(0);
+
+            //CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(f, "stick-figure-png5a0-4d0c-b092-85ebd63534c3.png", "image/png", user, issue, false, false, null, myDate, true);
+            //description = issue.getSummary();
+            //try {
+            //    attachmentManager.createAttachment(bean);
+            //} catch (AttachmentException ex) {
+            //    description = ex.getMessage();
+            //}
 
             issueInputParameters.setSummary(reportObj.getString("description"))
                 .setDescription(description)
@@ -383,8 +417,30 @@ public class IssueCRUD extends HttpServlet {
             } else {
                 //List<Issue> issues = getIssues();
                 //Issue issue = issues.get(0);
-                //IssueService.IssueResult issue = issueService.create(user, result);
-                issueService.create(user, result);
+                IssueService.IssueResult issue = issueService.create(user, result);
+                attachments = bugDetails.getJSONArray("attachments");
+
+                for (int j = 0; j < attachments.length(); j++) {
+                    attachment = attachments.getJSONObject(j);
+                    //attachmentUrl2 = new URL("poo");
+                    //f = null;
+                    //f = new File(attachment.getString("file_file_name"));
+                    //downloadToFile(f, "https:" + attachment.getString("file_file_url"));
+                    f = new File(attachment.getString("file_file_name"));
+                    URL newUrl = new URL("https:" + attachment.getString("file_url"));
+                    FileUtils.copyURLToFile(newUrl, f);
+                    //FileUtils.copyURLToFile(attachmentUrl, f);
+                    bean = new CreateAttachmentParamsBean(f, attachment.getString("file_file_name"),
+                                                          attachment.getString("file_content_type"),
+                                                          user, (Issue) issue.getIssue(), false, false, null,
+                                                          myDate, true);
+                    try {
+                        attachmentManager.createAttachment(bean);
+                    } catch (AttachmentException ex) {
+                        description = ex.getMessage();
+                    }
+                }
+                //issueService.create(user, result);
                 //JSONObject moreDataObj = new JSONObject(moreData);
                 //JSONArray attachments = moreDataObj.getJSONArray("attachments");
                 //Map<String, Object> imgProps = toMap(attachments.getJSONObject(0));
