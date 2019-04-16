@@ -259,7 +259,7 @@ public class IssueCRUD extends HttpServlet {
             if (description.length() > 4) {
                 if (description.substring(0, 2).equals("ID")) {
                     String idNum = description.substring(4);
-                    if (idNum.contains("D")) {
+                    if (idNum.contains("D") && !idNum.substring(0, 1).equals("D")) {
                         idNum = idNum.substring(0, idNum.indexOf("D") - 1);
                         if (idNum.equals(Integer.toString(id))) {
                             found = true;
