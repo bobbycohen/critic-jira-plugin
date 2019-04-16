@@ -249,10 +249,33 @@ public class IssueCRUD extends HttpServlet {
         return list;
     }
 
+    public boolean issueExists(int id) {
+        List<Issue> issues = getIssues();
+        Iterator<Issue> issueItr = issues.iterator();
+        boolean found = false;
+        while(issueItr.hasNext() && !found) {
+            Issue issue = issueItr.next();
+            String description = issue.getDescription();
+            if (description.length() > 4) {
+                if (description.substring(0, 2).equals("ID")) {
+                    String idNum = description.substring(4);
+                    if (idNum.contains("D")) {
+                        idNum = idNum.substring(0, idNum.indexOf("D") - 1);
+                        if (idNum.equals(Integer.toString(id))) {
+                            found = true;
+                        }
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
         Map<String, Object> context = new HashMap<>();
-        String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
+        String app_api_token = "2PUeap7YiZKucEofuCHRJap5";
+        String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=" + app_api_token, 4000);
         JSONObject dataObj = new JSONObject(data);
         int count = dataObj.getInt("count");
         Project project = projectService.getProjectByKey(user, "DEMO").getProject();
@@ -271,61 +294,63 @@ public class IssueCRUD extends HttpServlet {
         IssueInputParameters issueInputParameters = null;
         JSONArray bugReports = dataObj.getJSONArray("bug_reports");
         Date myDate = new Date();
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 10; i++) {
             JSONObject reportObj = bugReports.getJSONObject(i);
-            String details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id") + "?app_api_token=2PUeap7YiZKucEofuCHRJap5", 4000);
-            JSONObject bugDetails = new JSONObject(details);
-            issueInputParameters = issueService.newIssueInputParameters();
-            String description = "ID: " + reportObj.getInt("id")
-                + "\nDescription: " + reportObj.getString("description")
-                + "\nCreated at: " + reportObj.getString("created_at")
-                + "\nUpdated at: " + reportObj.getString("updated_at");
-            if (!reportObj.isNull("steps_to_reproduce")) {
-                description = description + "\nSteps to Reproduce: " + reportObj.get("steps_to_reproduce");
-            }
-            if (!reportObj.isNull("user_identifier")) {
-                description = description + "\nUser Identifier: " + reportObj.get("user_identifier");
-            }
-            if (!reportObj.isNull("metadata")) {
-                JSONObject metadata = reportObj.getJSONObject("metadata");
-                JSONArray metadataNames = metadata.names();
-                for (int j = 0; j < metadata.length(); j++) {
-                    String fieldName = metadataNames.getString(j);
-                    description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
-                        + ": " + metadata.get(fieldName);
+            if (!issueExists(reportObj.getInt("id"))) {
+                String details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + reportObj.getInt("id")
+                        + "?app_api_token=" + app_api_token, 4000);
+                JSONObject bugDetails = new JSONObject(details);
+                issueInputParameters = issueService.newIssueInputParameters();
+                String description = "ID: " + reportObj.getInt("id")
+                        + "\nDescription: " + reportObj.getString("description")
+                        + "\nCreated at: " + reportObj.getString("created_at")
+                        + "\nUpdated at: " + reportObj.getString("updated_at");
+                if (!reportObj.isNull("steps_to_reproduce")) {
+                    description = description + "\nSteps to Reproduce: " + reportObj.get("steps_to_reproduce");
                 }
-            }
-            issueInputParameters.setSummary(reportObj.getString("description"))
-                .setDescription(description)
-                .setAssigneeId(user.getName())
-                .setReporterId(user.getName())
-                .setProjectId(project.getId())
-                .setIssueTypeId(req.getParameter("type"))
-                .setPriorityId(req.getParameter("priority"));
-            IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
-            if (result.getErrorCollection().hasAnyErrors()) {
-                List<Issue> issues = getIssues();
-                context.put("issues", issues);
-                context.put("errors", result.getErrorCollection().getErrors());
-                resp.setContentType("text/html;charset=utf-8");
-                templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
-            } else {
-                IssueService.IssueResult issue = issueService.create(user, result);
-                JSONArray attachments = bugDetails.getJSONArray("attachments");
-                for (int j = 0; j < attachments.length(); j++) {
-                    JSONObject attachmentInfo = attachments.getJSONObject(j);
-                    File attachmentLoc = new File(attachmentInfo.getString("file_file_name"));
-                    URL attachmentUrl = new URL("https:" + attachmentInfo.getString("file_url"));
-                    FileUtils.copyURLToFile(attachmentUrl, attachmentLoc);
-                    CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc,
-                        attachmentInfo.getString("file_file_name"),
-                        attachmentInfo.getString("file_content_type"),
-                        user, issue.getIssue(), false, false, null,
-                        myDate, true);
-                    try {
-                        attachmentManager.createAttachment(bean);
-                    } catch (AttachmentException ex) {
-                        description = ex.getMessage();
+                if (!reportObj.isNull("user_identifier")) {
+                    description = description + "\nUser Identifier: " + reportObj.get("user_identifier");
+                }
+                if (!reportObj.isNull("metadata")) {
+                    JSONObject metadata = reportObj.getJSONObject("metadata");
+                    JSONArray metadataNames = metadata.names();
+                    for (int j = 0; j < metadata.length(); j++) {
+                        String fieldName = metadataNames.getString(j);
+                        description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
+                                + ": " + metadata.get(fieldName);
+                    }
+                }
+                issueInputParameters.setSummary(reportObj.getString("description"))
+                        .setDescription(description)
+                        .setAssigneeId(user.getName())
+                        .setReporterId(user.getName())
+                        .setProjectId(project.getId())
+                        .setIssueTypeId(req.getParameter("type"))
+                        .setPriorityId(req.getParameter("priority"));
+                IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
+                if (result.getErrorCollection().hasAnyErrors()) {
+                    List<Issue> issues = getIssues();
+                    context.put("issues", issues);
+                    context.put("errors", result.getErrorCollection().getErrors());
+                    resp.setContentType("text/html;charset=utf-8");
+                    templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
+                } else {
+                    IssueService.IssueResult issue = issueService.create(user, result);
+                    JSONArray attachments = bugDetails.getJSONArray("attachments");
+                    for (int j = 0; j < attachments.length(); j++) {
+                        JSONObject attachmentInfo = attachments.getJSONObject(j);
+                        File attachmentLoc = new File(attachmentInfo.getString("file_file_name"));
+                        URL attachmentUrl = new URL("https:" + attachmentInfo.getString("file_url"));
+                        FileUtils.copyURLToFile(attachmentUrl, attachmentLoc);
+                        CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc,
+                                attachmentInfo.getString("file_file_name"),
+                                attachmentInfo.getString("file_content_type"),
+                                user, issue.getIssue(), false, false, null,
+                                myDate, true);
+                        try {
+                            attachmentManager.createAttachment(bean);
+                        } catch (AttachmentException ex) {
+                        }
                     }
                 }
             }
