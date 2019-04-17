@@ -50,9 +50,9 @@
                 </div>
                 <div class="field-group">
                     <label for="h-fget">
-                        Let's make a GET call!
+                        App API Token
                     </label>
-                    <textarea style="height: 200px; width: 300px" id="h-fget" name="get"></textarea>
+                    <input id="h-fget" class="text long-field" type="text" name="get">
                 </div>
                 <div class="buttons">
                     <input class="button" type="submit" value="Create">
