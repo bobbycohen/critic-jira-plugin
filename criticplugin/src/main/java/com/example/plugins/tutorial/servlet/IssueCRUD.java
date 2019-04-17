@@ -271,6 +271,32 @@ public class IssueCRUD extends HttpServlet {
         return found;
     }
 
+    public String formatName(String fieldName) {
+        String newName = fieldName;
+        while (newName.contains("_")){
+            String firstWord = newName.substring(0, newName.indexOf("_"));
+            firstWord = firstWord.substring(0, 1).toUpperCase() + firstWord.substring(1);
+            if (firstWord.equals("Id")) {
+                firstWord = "ID";
+            }
+            String secondWord = "";
+            if (newName.substring(newName.indexOf("_")).length() > 1) {
+                secondWord = newName.substring(newName.indexOf("_") + 1);
+                secondWord = secondWord.substring(0, 1).toUpperCase() + secondWord.substring(1);
+                if (secondWord.equals("Id")) {
+                    secondWord = "ID";
+                }
+            }
+            newName = firstWord + " " + secondWord;
+        }
+        if (newName.equals("id") || newName.equals("Id")) {
+            newName = "ID";
+        } else if (newName.length() > 1) {
+            newName = newName.substring(0, 1).toUpperCase() + newName.substring(1);
+        }
+        return newName;
+    }
+
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
         Map<String, Object> context = new HashMap<>();
@@ -324,10 +350,47 @@ public class IssueCRUD extends HttpServlet {
                     if (!report.isNull("metadata")) {
                         JSONObject metadata = report.getJSONObject("metadata");
                         JSONArray metadataNames = metadata.names();
+                        boolean header = false;
                         for (int metadataNum = 0; metadataNum < metadata.length(); metadataNum++) {
                             String fieldName = metadataNames.getString(metadataNum);
-                            description = description + "\n" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1)
-                                    + ": " + metadata.get(fieldName);
+                            String newName = formatName(fieldName);
+                            if (!header) {
+                                header = true;
+                                description = description + "\n\nMetadata:";
+                            }
+                            description = description + "\n" + newName + ": " + metadata.get(fieldName);
+                        }
+                    }
+                    if (req.getParameterValues("app_version_data").length == 2) {
+                        if (!bugDetails.isNull("app_version")) {
+                            JSONObject appVersion = bugDetails.getJSONObject("app_version");
+                            JSONArray appVersionNames = appVersion.names();
+                            boolean header = false;
+                            for (int appVersionNum = 0; appVersionNum < appVersion.length(); appVersionNum++) {
+                                String fieldName = appVersionNames.getString(appVersionNum);
+                                String newName = formatName(fieldName);
+                                if (!header) {
+                                    header = true;
+                                    description = description + "\n\nApp Version Data:";
+                                }
+                                description = description + "\n" + newName + ": " + appVersion.get(fieldName);
+                            }
+                        }
+                    }
+                    if (req.getParameterValues("device_data").length == 2) {
+                        if (!bugDetails.isNull("device")) {
+                            JSONObject device = bugDetails.getJSONObject("device");
+                            JSONArray deviceNames = device.names();
+                            boolean header = false;
+                            for (int deviceNum = 0; deviceNum < device.length(); deviceNum++) {
+                                String fieldName = deviceNames.getString(deviceNum);
+                                String newName = formatName(fieldName);
+                                if (!header) {
+                                    header = true;
+                                    description = description + "\n\nDevice Data:";
+                                }
+                                description = description + "\n" + newName + ": " + device.get(fieldName);
+                            }
                         }
                     }
                     issueInputParameters.setSummary(report.getString("description"))

@@ -49,6 +49,20 @@
                     </select>
                 </div>
                 <div class="field-group">
+                    <label for="h-fapp_version_data">
+                        App Version Data
+                    </label>
+                    <input type="checkbox" id="h-fapp_version_data" name="app_version_data" value="checked">
+                    <input type="hidden" name="app_version_data" value="hidden">
+                </div>
+                <div class="field-group">
+                    <label for="h-fdevice_data">
+                        Device Data
+                    </label>
+                    <input type="checkbox" id="h-fdevice_data" name="device_data" value="checked">
+                    <input type="hidden" name="device_data" value="hidden">
+                </div>
+                <div class="field-group">
                     <label for="h-fget">
                         App API Token
                     </label>
