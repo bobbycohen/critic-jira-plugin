@@ -179,10 +179,12 @@ public class IssueCRUD extends HttpServlet {
         }
     }
 
+    // Makes GET call to the provided url and, if successful, stores the result in a string.
     public String getJSON(String url, int timeout) {
         HttpURLConnection c = null;
         int status = 0;
         try {
+            // Make URL object using provided url string, verifying that the URL is properly formatted.
             URL u = new URL(url);
             c = (HttpURLConnection) u.openConnection();
             c.setRequestMethod("GET");
@@ -191,12 +193,15 @@ public class IssueCRUD extends HttpServlet {
             c.setAllowUserInteraction(false);
             c.setConnectTimeout(timeout);
             c.setReadTimeout(timeout);
+            // Make connection.
             c.connect();
             status = c.getResponseCode();
 
             switch (status) {
+                // If the connection is successfully made, the response code will be 200 or 201.
                 case 200:
                 case 201:
+                    // If a 200 or 201 is received, read the data into a String and return it.
                     BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
                     StringBuilder sb = new StringBuilder();
                     String line;
@@ -206,13 +211,19 @@ public class IssueCRUD extends HttpServlet {
                     br.close();
                     return sb.toString();
             }
+        // Catch and handle any errors that might occur.
         } catch (MalformedURLException ex) {
+            //context.put("errors", ex.getMessage());
         } catch (IOException ex) {
+            //context.put("errors", ex.getMessage());
         } finally {
             if (c != null) {
                 try {
+                    // Attempt to disconnect.
                     c.disconnect();
+                // Catch and handle any errors that might have occured in disconnecting.
                 } catch (Exception ex) {
+                    //context.put("errors", ex.getMessage());
                 }
             }
         }
@@ -249,33 +260,43 @@ public class IssueCRUD extends HttpServlet {
         return list;
     }
 
+    // Checks if issue for the given id already exists.
     public boolean issueExists(int id) {
+        // Get all Issues belonging to the project.
         List<Issue> issues = getIssues();
         Iterator<Issue> issueItr = issues.iterator();
-        boolean found = false;
-        while(issueItr.hasNext() && !found) {
+        // Iterate through all issues until there are either no more issues, or a duplicate has been found.
+        while(issueItr.hasNext()) {
             Issue issue = issueItr.next();
             String description = issue.getDescription();
+            // Parse the description of this Issue to determine if the Issue's ID matches the provided ID parameter.
             if (description.length() > 4) {
                 if (description.substring(0, 2).equals("ID")) {
                     String idNum = description.substring(4);
                     if (idNum.contains("D") && !idNum.substring(0, 1).equals("D")) {
                         idNum = idNum.substring(0, idNum.indexOf("D") - 1);
+                        // If the ID's are equal, a duplicate has been found.
                         if (idNum.equals(Integer.toString(id))) {
-                            found = true;
+                            // Return true because a duplicate was found.
+                            return true;
                         }
                     }
                 }
             }
         }
-        return found;
+        // Return false because all issues were iterated through and no duplicate was found.
+        return false;
     }
 
+    // Formats name for display in the Issue description. For example, turns "app_id" into "App ID"
     public String formatName(String fieldName) {
+        // Make a copy of the provided parameter fieldName.
         String newName = fieldName;
+        // Replace all underscores with spaces, and capitalize each word separated by an underscore.
         while (newName.contains("_")){
             String firstWord = newName.substring(0, newName.indexOf("_"));
             firstWord = firstWord.substring(0, 1).toUpperCase() + firstWord.substring(1);
+            // If a word is ID, capitalize it.
             if (firstWord.equals("Id")) {
                 firstWord = "ID";
             }
@@ -289,21 +310,30 @@ public class IssueCRUD extends HttpServlet {
             }
             newName = firstWord + " " + secondWord;
         }
+        // If a word is ID, capitalize it.
         if (newName.equals("id") || newName.equals("Id")) {
             newName = "ID";
         } else if (newName.length() > 1) {
             newName = newName.substring(0, 1).toUpperCase() + newName.substring(1);
         }
+        // Return the new, formatted name.
         return newName;
     }
 
+    // Method to handle Issue creation. Makes all neccessary GET requests to gather relevant data from Critic, and makes
+    // Issues for bug reports that do not yet have Issues.
     private void handleIssueCreation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         ApplicationUser user = authenticationContext.getLoggedInUser();
         Map<String, Object> context = new HashMap<>();
+        // Get the App API Token from the interface form submission.
+        // String app_api_token = req.getParameter("token");
         String app_api_token = "2PUeap7YiZKucEofuCHRJap5";
+        // Call getJSON method and store data string into 'data'.
         String data = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token=" + app_api_token, 4000);
+        // Create a new JSONObject for the string 'data'.
         JSONObject dataObj = new JSONObject(data);
         Project project = projectService.getProjectByKey(user, "DEMO").getProject();
+        // If the project is invalid or the Issue Type cannot be found, throw an error and render the list template.
         if (project == null) {
             context.put("errors", Collections.singletonList("Project doesn't exist"));
             templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
@@ -318,6 +348,7 @@ public class IssueCRUD extends HttpServlet {
         }
         IssueInputParameters issueInputParameters = null;
         Date myDate = new Date();
+        // For each page of bug reports, create detailed Issues for each bug report on the page.
         for (int currentPage = dataObj.getInt("current_page"); currentPage <= dataObj.getInt("total_pages"); currentPage++) {
             JSONObject pageDataObj = null;
             String pageData = null;
@@ -325,34 +356,42 @@ public class IssueCRUD extends HttpServlet {
                 pageData = data;
                 pageDataObj = dataObj;
             } else {
+                // If there is a page greater than 1, make a new GET call to retrieve the bug reports on that page.
                 pageData = getJSON("https://critic.inventiv.io/api/v2/bug_reports?app_api_token="
                         + app_api_token + "&page=" + currentPage, 4000);
                 pageDataObj = new JSONObject(pageData);
             }
+            // Store all of the bug reports onto the page into the 'bugReports' object.
             JSONArray bugReports = pageDataObj.getJSONArray("bug_reports");
             for (int reportNum = 0; reportNum < pageDataObj.getInt("count"); reportNum++) {
                 JSONObject report = bugReports.getJSONObject(reportNum);
+                // Check if the Issue for this bug report already exists using the issueExists method.
                 if (!issueExists(report.getInt("id"))) {
+                    // Make another GET request to get additional details about the bug report.
                     String details = getJSON("https://critic.inventiv.io/api/v2/bug_reports/" + report.getInt("id")
                             + "?app_api_token=" + app_api_token, 4000);
                     JSONObject bugDetails = new JSONObject(details);
                     issueInputParameters = issueService.newIssueInputParameters();
+                    // Populate the description field with bug report ID and other relevant info.
                     String description = "ID: " + report.getInt("id")
                             + "\nDescription: " + report.getString("description")
                             + "\nCreated at: " + report.getString("created_at")
-                            + "\nUpdated at: " + report.getString("updated_at");
+                            + "\nUpdated at: " + report.getString("updated_at")
+                            + "\nLink to Critic Web Portal: https://critic.inventiv.io/bug_reports/" + report.getInt("id");
                     if (!report.isNull("steps_to_reproduce")) {
                         description = description + "\nSteps to Reproduce: " + report.get("steps_to_reproduce");
                     }
                     if (!report.isNull("user_identifier")) {
                         description = description + "\nUser Identifier: " + report.get("user_identifier");
                     }
+                    // Parse metadata and add to description.
                     if (!report.isNull("metadata")) {
                         JSONObject metadata = report.getJSONObject("metadata");
                         JSONArray metadataNames = metadata.names();
                         boolean header = false;
                         for (int metadataNum = 0; metadataNum < metadata.length(); metadataNum++) {
                             String fieldName = metadataNames.getString(metadataNum);
+                            // Format name of metadata field to be readable.
                             String newName = formatName(fieldName);
                             if (!header) {
                                 header = true;
@@ -361,6 +400,7 @@ public class IssueCRUD extends HttpServlet {
                             description = description + "\n" + newName + ": " + metadata.get(fieldName);
                         }
                     }
+                    // If app version data is requested, append app version data to description.
                     if (req.getParameterValues("app_version_data").length == 2) {
                         if (!bugDetails.isNull("app_version")) {
                             JSONObject appVersion = bugDetails.getJSONObject("app_version");
@@ -377,6 +417,7 @@ public class IssueCRUD extends HttpServlet {
                             }
                         }
                     }
+                    // If device data is requested, append device data to description.
                     if (req.getParameterValues("device_data").length == 2) {
                         if (!bugDetails.isNull("device")) {
                             JSONObject device = bugDetails.getJSONObject("device");
@@ -393,6 +434,7 @@ public class IssueCRUD extends HttpServlet {
                             }
                         }
                     }
+                    // Set all Issue attributes.
                     issueInputParameters.setSummary(report.getString("description"))
                             .setDescription(description)
                             .setAssigneeId(user.getName())
@@ -400,35 +442,47 @@ public class IssueCRUD extends HttpServlet {
                             .setProjectId(project.getId())
                             .setIssueTypeId(req.getParameter("type"))
                             .setPriorityId(req.getParameter("priority"));
+                    // Validate that the issue is formatted correctly.
                     IssueService.CreateValidationResult result = issueService.validateCreate(user, issueInputParameters);
+                    // If formatted incorrectly, return an error and do not create the issue.
                     if (result.getErrorCollection().hasAnyErrors()) {
                         List<Issue> issues = getIssues();
                         context.put("issues", issues);
                         context.put("errors", result.getErrorCollection().getErrors());
                         resp.setContentType("text/html;charset=utf-8");
                         templateRenderer.render(LIST_ISSUES_TEMPLATE, context, resp.getWriter());
+                    // If formatted correctly:
                     } else {
+                        // Create the issue.
                         IssueService.IssueResult issue = issueService.create(user, result);
                         JSONArray attachments = bugDetails.getJSONArray("attachments");
+                        // Iterate through all attachments.
                         for (int attachmentNum = 0; attachmentNum < attachments.length(); attachmentNum++) {
                             JSONObject attachmentInfo = attachments.getJSONObject(attachmentNum);
+                            // Download attachment data into File object.
                             File attachmentLoc = new File(attachmentInfo.getString("file_file_name"));
                             URL attachmentUrl = new URL("https:" + attachmentInfo.getString("file_url"));
                             FileUtils.copyURLToFile(attachmentUrl, attachmentLoc);
+                            // Store attachment data as well as relevant attributes into CreateAttachmentParamsBean object.
                             CreateAttachmentParamsBean bean = new CreateAttachmentParamsBean(attachmentLoc,
                                     attachmentInfo.getString("file_file_name"),
                                     attachmentInfo.getString("file_content_type"),
                                     user, issue.getIssue(), false, false, null,
+                                    //new Date(attachmentInfo.getString("file_updated_at")), true);
                                     myDate, true);
                             try {
+                                // Attach the attachment.
                                 attachmentManager.createAttachment(bean);
+                            // Handle errors.
                             } catch (AttachmentException ex) {
+                                //context.put("errors", ex.getMessage());
                             }
                         }
                     }
                 }
             }
         }
+        // Redirect back to the list page.
         resp.sendRedirect("issuecrud");
     }
 

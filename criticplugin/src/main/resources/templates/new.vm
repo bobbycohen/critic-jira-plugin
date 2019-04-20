@@ -1,31 +1,17 @@
 <html>
 <head>
-    <title>Create Issue — Issue CRUD Tutorial</title>
+    <title>Get Critic Issues - Critic/JIRA Plugin</title>
     <meta name="decorator" content="atl.general">
 </head>
 <body class="page-type-admin">
 <div class="content-container" id="issue-crud-container">
 
     <div class="content-body">
-        <h1>Create issue</h1>
+        <h1>Get Critic Issues</h1>
         <div class="create-issue-panel">
 
             <form method="post" id="h" action="issuecrud" class="aui">
                 <input type="hidden" name="actionType" value="new">
-                <div class="field-group">
-                    <label for="h-fsummary">
-                        Summary
-                        <span class="aui-icon icon-required"></span>
-                        <span class="content">required</span>
-                    </label>
-                    <input id="h-fsummary" class="text long-field" type="text" name="summary">
-                </div>
-                <div class="field-group">
-                    <label for="h-fdescription">
-                        Description
-                    </label>
-                    <textarea style="height: 200px; width: 300px" id="h-fdescription" name="description"></textarea>
-                </div>
                 <div class="field-group">
                     <label for="h-fpriority">
                         Priority
@@ -66,7 +52,7 @@
                     <label for="h-fget">
                         App API Token
                     </label>
-                    <input id="h-fget" class="text long-field" type="text" name="get">
+                    <input id="h-fget" class="text long-field" type="text" name="token">
                 </div>
                 <div class="buttons">
                     <input class="button" type="submit" value="Create">
